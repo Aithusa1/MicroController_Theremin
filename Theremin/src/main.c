@@ -1,26 +1,31 @@
 
+// #include <stdio.h>
+// #include <avr/io.h>
+// #include <util/delay.h>
+// #include "newMath.h"
+
+
+
+// int main(){
+//     DDRB |= (1 << DDB5); // Set pin 13 as output
+
+//     while(1){
+//         PORTB ^= (1 << PORTB5); // Toggle pin 13
+//         unsigned int delay = multiply(2, 1000); // Call multiply function
+//         _delay_ms(delay); // Wait for 1 second
+//     }
+//     return -1;
+// }
+
+
+
 #include <stdio.h>
-#include <avr/io.h>
-#include <util/delay.h>
-#include "newMath.h"
-
-int main(){
-    DDRB |= (1 << DDB5); // Set pin 13 as output
-
-    while(1){
-        PORTB ^= (1 << PORTB5); // Toggle pin 13
-        unsigned int delay = multiply(2, 1000); // Call multiply function
-        _delay_ms(delay); // Wait for 1 second
-    }
-    return -1;
+int main()
+{
+    int waarde;
+    printf("%d\n", waarde);
+    return 0;
 }
-
-
-
-
-
-
-
 
 
 
