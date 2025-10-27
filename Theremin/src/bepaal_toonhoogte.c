@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include "bepaal_toonhoogte.h"
 
-#define F_CPU 16000000UL
-
 // Zet afstand om naar frequentie
 uint16_t dist_to_freq(uint16_t dist) {
     if (dist < 2 || dist > 65) return 150;
@@ -19,10 +17,9 @@ void update_freq(uint16_t *freq) {
     OCR2A = ocr;
 }
 
-// Soepele overgang tussen frequenties
-void smooth_freq(uint16_t *current, uint16_t target) {
+void smooth_freq(volatile uint16_t *current, uint16_t target) {
     int16_t diff = target - *current;
     if (diff > 0) *current += diff / 8;
     else if (diff < 0) *current += diff / 8;
-    update_freq(current);
+    update_freq((uint16_t*)current); // Type cast voor update_freq
 }

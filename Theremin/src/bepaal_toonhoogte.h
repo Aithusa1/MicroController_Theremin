@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 
-// Functie declaraties
-uint16_t dist_to_freq(uint16_t dist);
-void smooth_freq(uint16_t *current, uint16_t target);
-void update_freq(uint16_t *freq);
+uint16_t dist_to_freq(uint16_t distance);
+void smooth_freq(volatile uint16_t *current, uint16_t target);
 
 #endif
