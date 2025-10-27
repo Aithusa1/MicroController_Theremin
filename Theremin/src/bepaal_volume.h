@@ -1,11 +1,11 @@
-#ifndef BEPAAL_VOLUME_H
-#define BEPAAL_VOLUME_H
+// #ifndef BEPAAL_VOLUME_H
+// #define BEPAAL_VOLUME_H
 
-#include <stdint.h>
+// #include <stdint.h>
 
-extern volatile uint8_t volume;
+// extern volatile uint8_t volume;
 
-void adc_init(void);
-void timer2_init(void);
+// void adc_init(void);
+// void timer2_init(void);
 
-#endif
+// #endif
