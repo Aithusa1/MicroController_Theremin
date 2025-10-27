@@ -5,36 +5,16 @@
 #include <stdio.h>
 #include "twi.h"
 #include "weergeven_afstand_hoogte.h"
+#include "bepaal_toonhoogte.h"
+#include "bepaal_volume.h"
 
-// Global variables
-volatile uint8_t volume = 128;
-volatile uint16_t target_freq = 500;
-volatile uint16_t current_freq = 500;
-volatile uint8_t sound_enabled = 1;
+// Global variables - gedefinieerd in volume.c
+extern volatile uint8_t volume;
+extern volatile uint8_t sound_enabled;
 
-#define TRIG_PIN PB1
-#define ECHO_PIN PB0
-#define BUZZER_PIN PD3
+volatile uint16_t target_freq = 800;  // Start in midden bereik
+volatile uint16_t current_freq = 800;
 
-// Externe functies uit bepaal_toonhoogte.c
-void setup_timer2_sound(void);
-void setup_timer1_sensor(void);
-void update_freq(uint16_t *freq);
-void smooth_freq(uint16_t *current, uint16_t target);
-uint16_t read_distance(void);
-uint16_t dist_to_freq(uint16_t dist);
-
-void setup_adc(void) {
-    ADMUX = (1 << REFS0) | (1 << ADLAR);
-    ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
-}
-
-ISR(ADC_vect) {
-    volume = ADCH;
-    sound_enabled = (volume > 10);
-}
-
-// Functie om info op LCD te tonen
 void display_info(uint16_t dist, uint16_t freq) {
     lcd_command(0x80); // Eerste regel
     char buffer[16];
@@ -61,25 +41,32 @@ int main(void) {
     _delay_ms(1000);
     lcd_init();
     
-    setup_adc();
-    setup_timer1_sensor();
-    setup_timer2_sound();
+    // Hardware initialisatie VOLGENS TECHNISCH ONTWERP:
+    setup_adc();                    // Volume ADC
+    setup_timer2_volume_pwm();      // Timer2: Fast PWM voor volume
+    setup_timer0_frequency();       // Timer0: CTC mode voor frequentie
+    setup_timer1_sensor();          // Timer1: Sensor meting
     
     // Start bericht
     lcd_command(0x01);
     lcd_print("Theremin Ready");
     _delay_ms(1000);
     
+    // Global interrupts inschakelen
     sei();
     
-    while (1) {
+    // Hoofdloop - SNEL updates
+    while(1) {
         uint16_t dist = read_distance();
         target_freq = dist_to_freq(dist);
         smooth_freq(&current_freq, target_freq);
         
-        // Toon info op LCD
+        // Update PWM duty cycle op basis van volume
+        OCR2B = volume;
+        
+        // Display info
         display_info(dist, current_freq);
         
-        _delay_ms(50);
+        _delay_ms(15);  // Zeer korte delay voor snelle respons
     }
 }
