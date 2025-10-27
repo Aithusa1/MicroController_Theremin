@@ -2,11 +2,17 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "twi.h"
+
+#define LCD_ADDR 0x27 // adress
 
 volatile uint8_t volume = 128;
 volatile uint16_t target_freq = 200;
 volatile uint16_t current_freq = 200;
 volatile uint8_t sound_enabled = 1;
+
+volatile uint16_t echo_time = 0;
+volatile uint8_t measuring = 0;
 
 #define TRIG_PIN PB1
 #define ECHO_PIN PB0
@@ -26,10 +32,7 @@ ISR(TIMER2_COMPA_vect) {
     } else {
         PORTD &= ~(1 << BUZZER_PIN);
     }
-#include <util/delay.h>
-#include "twi.h"
-
-#define LCD_ADDR 0x27
+}
 
 // Simpele LCD functies
 void lcd_command(uint8_t cmd) {
@@ -64,6 +67,26 @@ void lcd_print(char *str) {
     while(*str) {
         lcd_data(*str++);
     }
+
+}
+
+void lcd_init() {
+    _delay_ms(50);
+    
+    // Initialisatie
+    lcd_command(0x33);
+    _delay_ms(5);
+    lcd_command(0x32);
+    _delay_ms(5);
+    lcd_command(0x28); // 2 lines, 5x8 font
+    lcd_command(0x0C); // Display on, cursor off
+    lcd_command(0x06); // Entry mode
+    lcd_command(0x01); // Clear display
+    _delay_ms(2);
+}
+
+
+// Update de frequentie van de toon
 void update_freq(uint16_t *freq) {
     if (*freq < 50) *freq = 50;
     if (*freq > 2000) *freq = 2000;
@@ -95,9 +118,6 @@ void setup_timer1_sensor(void) {
     TIMSK1 = (1 << ICIE1);
 }
 
-volatile uint16_t echo_time = 0;
-volatile uint8_t measuring = 0;
-
 ISR(TIMER1_CAPT_vect) {
     if (!measuring) {
         TCNT1 = 0;
@@ -122,33 +142,6 @@ uint16_t read_distance(void) {
         return (dist < 2 || dist > 400) ? 0 : dist;
     }
     return 0;
-void lcd_init() {
-    _delay_ms(50);
-    
-    // Initialisatie
-    lcd_command(0x33);
-    _delay_ms(5);
-    lcd_command(0x32);
-    _delay_ms(5);
-    lcd_command(0x28); // 2 lines, 5x8 font
-    lcd_command(0x0C); // Display on, cursor off
-    lcd_command(0x06); // Entry mode
-    lcd_command(0x01); // Clear display
-    _delay_ms(2);
-}
-
-int main(void) {
-    TWI_Init();
-    _delay_ms(1000);
-    
-    lcd_init();
-    
-    // Print "Hallo"
-    lcd_print("Hallo");
-    
-    while(1) {
-        _delay_ms(1000);
-    }
 }
 
 uint16_t dist_to_freq(uint16_t dist) {
@@ -157,6 +150,9 @@ uint16_t dist_to_freq(uint16_t dist) {
 }
 
 int main(void) {
+    TWI_Init();
+    _delay_ms(1000);
+
     DDRB |= (1 << TRIG_PIN);
     DDRB &= ~(1 << ECHO_PIN);
     
@@ -165,10 +161,19 @@ int main(void) {
     setup_timer2_sound();
     sei();
     
-    while (1) {
+    lcd_init();
+    
+    // Print "Hallo"
+    lcd_print("Hallo");
+    
+    while(1) {
+        _delay_ms(25);
         uint16_t dist = read_distance();
         target_freq = dist_to_freq(dist);
         smooth_freq(&current_freq, target_freq);
-        _delay_ms(50);
+        _delay_ms(25);
     }
 }
+
+
+
