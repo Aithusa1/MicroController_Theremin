@@ -13,7 +13,7 @@ typedef struct {
 } FilterElement;
 
 // Externe variabelen
-extern volatile uint8_t filter_size;
+extern uint8_t filter_size;
 extern FilterElement filter_buffer[FILTER_MAX_SIZE];
 
 // Functie declaraties
@@ -22,5 +22,6 @@ void filter_add_value(uint16_t value);
 uint16_t filter_get_median(void);
 void filter_set_size(uint8_t new_size);
 uint8_t filter_get_size(void);
+uint8_t* filter_get_size_ptr(void);  // Nieuwe functie voor pointer
 
 #endif

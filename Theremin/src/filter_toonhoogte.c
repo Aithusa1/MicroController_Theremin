@@ -3,7 +3,7 @@
 #include "filter_toonhoogte.h"
 
 // Filter buffer volgens technisch ontwerp
-volatile uint8_t filter_size = 5;  // Start met medium filter grootte
+uint8_t filter_size = 5;  // Start met medium filter grootte
 FilterElement filter_buffer[FILTER_MAX_SIZE];
 
 // Compare functie voor qsort (sorteren op value)
@@ -91,4 +91,9 @@ void filter_set_size(uint8_t new_size) {
 // Huidige filter grootte opvragen
 uint8_t filter_get_size(void) {
     return filter_size;
+}
+
+// Pointer naar filter_size teruggeven
+uint8_t* filter_get_size_ptr(void) {
+    return &filter_size;
 }
