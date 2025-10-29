@@ -55,14 +55,14 @@ ISR(PCINT2_vect) {
         if((current_state & (1 << PD4)) == 0) { // PD4 ingedrukt - filter kleiner
             uint8_t current_size = filter_get_size();
             if(current_size > FILTER_MIN_SIZE) {
-                filter_set_size(current_size - 1);
+                filter_set_size(current_size - 2); // Stap van 2 voor oneven getallen
             }
         }
         
         if((current_state & (1 << PD5)) == 0) { // PD5 ingedrukt - filter groter
             uint8_t current_size = filter_get_size();
             if(current_size < FILTER_MAX_SIZE) {
-                filter_set_size(current_size + 1);
+                filter_set_size(current_size + 2); // Stap van 2 voor oneven getallen
             }
         }
         

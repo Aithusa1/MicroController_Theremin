@@ -13,6 +13,7 @@ void setup_adc(void) {
     ADMUX = (1 << REFS0) | (1 << ADLAR);  // AVCC reference, left adjust result
     ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADATE) | (1 << ADIE) | 
              (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Prescaler 128
+    ADCSRB = 0; // Free running mode
 }
 
 ISR(ADC_vect) {
