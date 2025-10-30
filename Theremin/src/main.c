@@ -22,14 +22,14 @@ void display_info(uint16_t dist, uint16_t freq) {
     char buffer[16];
     
     if (dist > 0) {
-        snprintf(buffer, sizeof(buffer), "Dist:%3dcm F:%2d", dist, filter_buttons_get_size());
+        snprintf(buffer, sizeof(buffer), "Dist:%3dcm", dist);
     } else {
-        snprintf(buffer, sizeof(buffer), "No signal   F:%2d", filter_buttons_get_size());
+        snprintf(buffer, sizeof(buffer), "No signal");
     }
     lcd_print(buffer);
     
     lcd_command(0xC0);
-    snprintf(buffer, sizeof(buffer), "F:%4dHz V:%3d", freq, volume);
+    snprintf(buffer, sizeof(buffer), "%4dHz    %3d", freq, volume);
     lcd_print(buffer);
 }
 
