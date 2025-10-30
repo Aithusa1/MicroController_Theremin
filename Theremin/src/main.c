@@ -1,119 +1,76 @@
-
-// #include <stdio.h>
-// #include <avr/io.h>
-// #include <util/delay.h>
-// #include "newMath.h"
-
-
-
-// int main(){
-//     DDRB |= (1 << DDB5); // Set pin 13 as output
-
-//     while(1){
-//         PORTB ^= (1 << PORTB5); // Toggle pin 13
-//         unsigned int delay = multiply(2, 1000); // Call multiply function
-//         _delay_ms(delay); // Wait for 1 second
-//     }
-//     return -1;
-// }
-
-
-
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
 #include <stdio.h>
-int main()
-{
-    int waarde;
-    printf("%d\n", waarde);
-    return 0;
+#include "twi.h"
+#include "weergeven_afstand_hoogte.h"
+#include "bepaal_toonhoogte.h"
+#include "bepaal_volume.h"
+#include "filter_toonhoogte.h"
+#include "weergeven_filter.h"
+#include "filter_buttons.h"
+
+extern volatile uint8_t volume;
+extern volatile uint8_t sound_enabled;
+
+volatile uint16_t target_freq = 800;
+volatile uint16_t current_freq = 800;
+
+void display_info(uint16_t dist, uint16_t freq) {
+    lcd_command(0x80);
+    char buffer[16];
+    
+    if (dist > 0) {
+        snprintf(buffer, sizeof(buffer), "Dist:%3dcm", dist);
+    } else {
+        snprintf(buffer, sizeof(buffer), "No signal");
+    }
+    lcd_print(buffer);
+    
+    lcd_command(0xC0);
+    snprintf(buffer, sizeof(buffer), "%4dHz    %3d", freq, volume);
+    lcd_print(buffer);
 }
 
-
-
-
-
-
-
-
-
-
-// #define F_CPU 16000000UL
-// #include <avr/io.h>
-// #include <util/delay.h>
-// #include "twi.h"
-
-// // ================= LCD I2C DEFINITIES =================
-// #define LCD_I2C_ADDR 0x27  // typ. 0x27 of 0x3F
-// #define LCD_BACKLIGHT 0x08
-// #define LCD_ENABLE    0x04
-// #define LCD_COMMAND   0
-// #define LCD_DATA      1
-
-// // ================= LCD I2C FUNCTIES =================
-// void lcd_i2c_write(uint8_t data)
-// {
-//     TWI_MT_Start();
-//     TWI_Transmit_SLAW(LCD_I2C_ADDR);
-//     TWI_Transmit_Byte(data);
-//     TWI_Stop();
-//     _delay_us(50);
-// }
-
-// void lcd_i2c_send(uint8_t value, uint8_t mode)
-// {
-//     uint8_t highnib = value & 0xF0;
-//     uint8_t lownib = (value << 4) & 0xF0;
-//     uint8_t data;
-
-//     for (int i = 0; i < 2; i++) {
-//         data = (i == 0 ? highnib : lownib);
-//         lcd_i2c_write(data | mode | LCD_BACKLIGHT | LCD_ENABLE);
-//         lcd_i2c_write(data | mode | LCD_BACKLIGHT);
-//     }
-// }
-
-// void lcd_init_i2c(void)
-// {
-//     TWI_Init();
-//     _delay_ms(50);
-
-//     lcd_i2c_send(0x33, LCD_COMMAND);
-//     lcd_i2c_send(0x32, LCD_COMMAND);
-//     lcd_i2c_send(0x28, LCD_COMMAND); // 4-bit, 2 lijnen
-//     lcd_i2c_send(0x0C, LCD_COMMAND); // display aan, cursor uit
-//     lcd_i2c_send(0x06, LCD_COMMAND); // auto increment
-//     lcd_i2c_send(0x01, LCD_COMMAND); // clear
-//     _delay_ms(5);
-// }
-
-// void lcd_clear_i2c(void)
-// {
-//     lcd_i2c_send(0x01, LCD_COMMAND);
-//     _delay_ms(2);
-// }
-
-// void lcd_set_cursor_i2c(uint8_t col, uint8_t row)
-// {
-//     uint8_t row_offsets[] = {0x00, 0x40};
-//     lcd_i2c_send(0x80 | (col + row_offsets[row]), LCD_COMMAND);
-// }
-
-// void lcd_print_i2c(const char *str)
-// {
-//     while (*str) {
-//         lcd_i2c_send(*str++, LCD_DATA);
-//     }
-// }
-
-// // ================= MAIN =================
-// int main(void)
-// {
-//     lcd_init_i2c();
-//     lcd_clear_i2c();
-//     lcd_set_cursor_i2c(0,0);
-//     lcd_print_i2c("Hello");  // Toon gewoon "Hello"
-
-//     while(1)
-//     {
-//         // oneindige lus, doet verder niks
-//     }
-// }
+int main(void) {
+    DDRB |= (1 << TRIG_PIN);
+    DDRB &= ~(1 << ECHO_PIN);
+    
+    TWI_Init();
+    filter_buttons_init();
+    _delay_ms(1000);
+    lcd_init();
+    filter_init();
+    
+    setup_adc();
+    setup_timer2_volume_pwm();
+    setup_timer0_frequency();
+    setup_timer1_sensor();
+    
+    lcd_command(0x01);
+    lcd_print("Theremin Ready");
+    _delay_ms(1000);
+    
+    display_filter_size(filter_buttons_get_size());
+    
+    sei();
+    
+    while(1) {
+        uint16_t dist = read_distance();
+        target_freq = dist_to_freq(dist);
+        
+        filter_add_value(target_freq);
+        uint16_t filtered_freq = filter_get_median();
+        
+        smooth_freq(&current_freq, filtered_freq);
+        
+        OCR2B = volume;
+        
+        display_info(dist, current_freq);
+        
+        filter_buttons_update();
+        
+        _delay_ms(15);
+    }
+}
